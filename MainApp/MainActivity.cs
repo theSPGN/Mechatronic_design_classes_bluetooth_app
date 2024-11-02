@@ -13,30 +13,37 @@ namespace MainApp
     [Activity(Label = "BluetoothApp", MainLauncher = true)]
     public class MainActivity : Activity
     {
-        BluetoothAdapter bluetoothAdapter;
-        BluetoothSocket bluetoothSocket;
-        BluetoothDevice bluetoothDevice;
-        Stream outStream;
-        ListView listViewDevices;
-        ArrayAdapter<string> deviceListAdapter;
-        List<BluetoothDevice> deviceList = new List<BluetoothDevice>();
+        BluetoothAdapter bluetoothAdapter; // Adapter Bluetooth
+        BluetoothSocket bluetoothSocket; // Gniazdo Bluetooth
+        BluetoothDevice bluetoothDevice; // Urządzenie Bluetooth
+        Stream outStream; // Strumień wyjściowy do wysyłania danych
+        ListView listViewDevices; // Lista urządzeń Bluetooth
+        ArrayAdapter<string> deviceListAdapter; // Adapter dla listy urządzeń
+        List<BluetoothDevice> deviceList = new List<BluetoothDevice>(); // Lista urządzeń Bluetooth
+        BluetoothStateReceiver bluetoothStateReceiver; // Odbiornik stanu Bluetooth
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.activity_main);
+            SetContentView(Resource.Layout.activity_main); // Ustawienie widoku aktywności
 
-            bluetoothAdapter = BluetoothAdapter.DefaultAdapter;
+            bluetoothAdapter = BluetoothAdapter.DefaultAdapter; // Pobranie domyślnego adaptera Bluetooth
 
-            Button buttonConnect = FindViewById<Button>(Resource.Id.buttonConnect);
-            buttonConnect.Click += (sender, e) => CheckBluetoothState();
+            bluetoothStateReceiver = new BluetoothStateReceiver(); // Inicjalizacja odbiornika stanu Bluetooth
+            bluetoothStateReceiver.BluetoothDisabled += DisconnectBluetooth; // Subskrypcja zdarzenia wyłączenia Bluetooth
 
-            listViewDevices = FindViewById<ListView>(Resource.Id.listViewDevices);
-            listViewDevices.ItemClick += DeviceSelected;
+            RegisterReceiver(bluetoothStateReceiver, new IntentFilter(BluetoothAdapter.ActionStateChanged)); // Rejestracja odbiornika stanu Bluetooth
 
-            deviceListAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1);
-            listViewDevices.Adapter = deviceListAdapter;
+            Button buttonConnect = FindViewById<Button>(Resource.Id.buttonConnect); // Pobranie przycisku połączenia
+            buttonConnect.Click += (sender, e) => CheckBluetoothState(); // Ustawienie obsługi kliknięcia przycisku połączenia
 
+            listViewDevices = FindViewById<ListView>(Resource.Id.listViewDevices); // Pobranie listy urządzeń
+            listViewDevices.ItemClick += DeviceSelected; // Ustawienie obsługi kliknięcia elementu listy
+
+            deviceListAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1); // Inicjalizacja adaptera listy urządzeń
+            listViewDevices.Adapter = deviceListAdapter; // Ustawienie adaptera dla listy urządzeń
+
+            // Pobranie przycisków i ustawienie obsługi kliknięć
             Button buttonA = FindViewById<Button>(Resource.Id.buttonA);
             buttonA.Click += (sender, e) => SendData("a");
 
@@ -49,6 +56,7 @@ namespace MainApp
             Button buttonD = FindViewById<Button>(Resource.Id.buttonD);
             buttonD.Click += (sender, e) => SendData("d");
 
+            // Ukrycie przycisków na początku
             FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
@@ -57,8 +65,8 @@ namespace MainApp
 
         private void DeviceSelected(object sender, AdapterView.ItemClickEventArgs e)
         {
-            bluetoothDevice = deviceList[e.Position];
-            ConnectToBluetooth();
+            bluetoothDevice = deviceList[e.Position]; // Pobranie wybranego urządzenia
+            ConnectToBluetooth(); // Połączenie z wybranym urządzeniem
         }
 
         private void ConnectToBluetooth()
@@ -67,39 +75,40 @@ namespace MainApp
             {
                 if (bluetoothSocket != null && bluetoothSocket.IsConnected)
                 {
-                    bluetoothSocket.Close();
+                    bluetoothSocket.Close(); // Zamknięcie istniejącego połączenia
                     bluetoothSocket = null;
                 }
 
+                // Utworzenie nowego gniazda Bluetooth i połączenie
                 bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
                 bluetoothSocket.Connect();
-                outStream = bluetoothSocket.OutputStream;
+                outStream = bluetoothSocket.OutputStream; // Pobranie strumienia wyjściowego
 
+                // Uwidocznienie przycisków po połączeniu
                 FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
                 FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
                 FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
                 FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
-                listViewDevices.Visibility = Android.Views.ViewStates.Gone;
+                listViewDevices.Visibility = Android.Views.ViewStates.Gone; // Ukrycie listy urządzeń
             }
             catch (Exception ex)
             {
-                Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show();
+                Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show(); // Wyświetlenie komunikatu o błędzie
             }
         }
-
 
         private void SendData(string data)
         {
             if (outStream != null && bluetoothSocket != null && bluetoothSocket.IsConnected)
             {
-                byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data);
-                outStream.Write(buffer, 0, buffer.Length);
+                byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data); // Konwersja danych na bajty
+                outStream.Write(buffer, 0, buffer.Length); // Wysłanie danych
             }
         }
 
         private void ShowPairedDevices()
         {
-            var pairedDevices = bluetoothAdapter.BondedDevices;
+            var pairedDevices = bluetoothAdapter.BondedDevices; // Pobranie sparowanych urządzeń
             deviceList.Clear();
             deviceListAdapter.Clear();
 
@@ -107,24 +116,24 @@ namespace MainApp
             {
                 foreach (var device in pairedDevices)
                 {
-                    deviceList.Add(device);
-                    deviceListAdapter.Add(device.Name + "\n" + device.Address);
+                    deviceList.Add(device); // Dodanie urządzenia do listy
+                    deviceListAdapter.Add(device.Name + "\n" + device.Address); // Dodanie urządzenia do adaptera listy
                 }
             }
 
-            listViewDevices.Visibility = Android.Views.ViewStates.Visible;
+            listViewDevices.Visibility = Android.Views.ViewStates.Visible; // Uwidocznienie listy urządzeń
         }
 
         private void CheckBluetoothState()
         {
             if (!bluetoothAdapter.IsEnabled)
             {
-                Intent enableBtIntent = new Intent(BluetoothAdapter.ActionRequestEnable);
-                StartActivityForResult(enableBtIntent, 1);
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ActionRequestEnable); // Utworzenie intencji włączenia Bluetooth
+                StartActivityForResult(enableBtIntent, 1); // Rozpoczęcie aktywności włączania Bluetooth
             }
             else
             {
-                ShowPairedDevices();
+                ShowPairedDevices(); // Wyświetlenie sparowanych urządzeń
             }
         }
 
@@ -136,11 +145,11 @@ namespace MainApp
             {
                 if (resultCode == Result.Ok)
                 {
-                    ShowPairedDevices();
+                    ShowPairedDevices(); // Wyświetlenie sparowanych urządzeń po włączeniu Bluetooth
                 }
                 else
                 {
-                    Toast.MakeText(this, "Bluetooth must be enabled to connect.", ToastLength.Short).Show();
+                    Toast.MakeText(this, "Bluetooth must be enabled to connect.", ToastLength.Short).Show(); // Wyświetlenie komunikatu o konieczności włączenia Bluetooth
                 }
             }
         }
@@ -149,42 +158,40 @@ namespace MainApp
         {
             if (bluetoothSocket != null)
             {
-                bluetoothSocket.Close();
+                bluetoothSocket.Close(); // Zamknięcie połączenia Bluetooth
                 bluetoothSocket = null;
 
+                // Ukrycie przycisków po rozłączeniu
                 FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
                 FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
                 FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
                 FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
+                listViewDevices.Visibility = Android.Views.ViewStates.Gone; // Ukrycie listy urządzeń
             }
         }
 
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            DisconnectBluetooth();
-            
+            DisconnectBluetooth(); // Rozłączenie Bluetooth przy niszczeniu aktywności
+            UnregisterReceiver(bluetoothStateReceiver); // Wyrejestrowanie odbiornika stanu Bluetooth
         }
+    }
 
-        [BroadcastReceiver(Enabled = true)]
-        public class BluetoothStateReceiver : BroadcastReceiver
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { BluetoothAdapter.ActionStateChanged })]
+    public class BluetoothStateReceiver : BroadcastReceiver
+    {
+        public event Action BluetoothDisabled; // Zdarzenie wyłączenia Bluetooth
+
+        public override void OnReceive(Context context, Intent intent)
         {
-            public override void OnReceive(Context context, Intent intent)
+            if (intent.Action == BluetoothAdapter.ActionStateChanged)
             {
-                if (intent.Action == BluetoothAdapter.ActionStateChanged)
+                var state = intent.GetIntExtra(BluetoothAdapter.ExtraState, BluetoothAdapter.Error); // Pobranie stanu Bluetooth
+                if (state == (int)State.Off)
                 {
-                    int state = intent.GetIntExtra(BluetoothAdapter.ExtraState, BluetoothAdapter.Error);
-                    switch (state)
-                    {
-                        case (int)State.Off:
-                            Toast.MakeText(context, "Bluetooth został wyłączony", ToastLength.Long).Show();
-                            // Dodaj swoje dalsze akcje tutaj
-                            break;
-                        case (int)State.On:
-                            Toast.MakeText(context, "Bluetooth został włączony", ToastLength.Long).Show();
-                            // Dodaj swoje dalsze akcje tutaj
-                            break;
-                    }
+                    BluetoothDisabled?.Invoke(); // Wywołanie zdarzenia wyłączenia Bluetooth
                 }
             }
         }
