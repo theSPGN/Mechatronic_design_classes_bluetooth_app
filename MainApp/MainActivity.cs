@@ -4,9 +4,9 @@ using Android.Content;
 using Android.OS;
 using Android.Widget;
 using System;
+using System.Collections.Generic;
 using System.IO;
-
-
+using System.Linq;
 
 namespace MainApp
 {
@@ -17,6 +17,9 @@ namespace MainApp
         BluetoothSocket bluetoothSocket;
         BluetoothDevice bluetoothDevice;
         Stream outStream;
+        ListView listViewDevices;
+        ArrayAdapter<string> deviceListAdapter;
+        List<BluetoothDevice> deviceList = new List<BluetoothDevice>();
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
@@ -26,7 +29,13 @@ namespace MainApp
             bluetoothAdapter = BluetoothAdapter.DefaultAdapter;
 
             Button buttonConnect = FindViewById<Button>(Resource.Id.buttonConnect);
-            buttonConnect.Click += ConnectToBluetooth;
+            buttonConnect.Click += ShowPairedDevices;
+
+            listViewDevices = FindViewById<ListView>(Resource.Id.listViewDevices);
+            listViewDevices.ItemClick += DeviceSelected;
+
+            deviceListAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1);
+            listViewDevices.Adapter = deviceListAdapter;
 
             Button buttonA = FindViewById<Button>(Resource.Id.buttonA);
             buttonA.Click += (sender, e) => SendData("a");
@@ -41,18 +50,80 @@ namespace MainApp
             buttonD.Click += (sender, e) => SendData("d");
         }
 
-        private void ConnectToBluetooth(object sender, EventArgs e)
+        private void ShowPairedDevices(object sender, EventArgs e)
         {
-            bluetoothDevice = bluetoothAdapter.GetRemoteDevice("98:DA:60:00:CA:40"); // adres MAC modułu HC-05
-            bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
-            bluetoothSocket.Connect();
-            outStream = bluetoothSocket.OutputStream;
+            var pairedDevices = bluetoothAdapter.BondedDevices;
+            deviceList.Clear();
+            deviceListAdapter.Clear();
+
+            if (pairedDevices.Count > 0)
+            {
+                foreach (var device in pairedDevices)
+                {
+                    deviceList.Add(device);
+                    deviceListAdapter.Add(device.Name + "\n" + device.Address);
+                }
+            }
+
+            listViewDevices.Visibility = Android.Views.ViewStates.Visible;
+        }
+
+        private void DeviceSelected(object sender, AdapterView.ItemClickEventArgs e)
+        {
+            bluetoothDevice = deviceList[e.Position];
+            ConnectToBluetooth();
+        }
+
+        private void ConnectToBluetooth()
+        {
+            try
+            {
+                bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
+                bluetoothSocket.Connect();
+                outStream = bluetoothSocket.OutputStream;
+
+                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
+                listViewDevices.Visibility = Android.Views.ViewStates.Gone;
+            }
+            catch (Exception ex)
+            {
+                Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show();
+            }
         }
 
         private void SendData(string data)
         {
-            byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data);
-            outStream.Write(buffer, 0, buffer.Length);
+            if (outStream != null)
+            {
+                byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data);
+                outStream.Write(buffer, 0, buffer.Length);
+            }
+        }
+        private void DisconnectBluetooth()
+        {
+            if (bluetoothSocket != null)
+            {
+                bluetoothSocket.Close();
+                bluetoothSocket = null;
+
+                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
+                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
+                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
+                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
+            }
+        }
+
+
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (bluetoothSocket != null)
+            {
+                DisconnectBluetooth();
+            }
         }
     }
 }
