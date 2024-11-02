@@ -29,7 +29,7 @@ namespace MainApp
             bluetoothAdapter = BluetoothAdapter.DefaultAdapter;
 
             Button buttonConnect = FindViewById<Button>(Resource.Id.buttonConnect);
-            buttonConnect.Click += ShowPairedDevices;
+            buttonConnect.Click += (sender, e) => CheckBluetoothState();
 
             listViewDevices = FindViewById<ListView>(Resource.Id.listViewDevices);
             listViewDevices.ItemClick += DeviceSelected;
@@ -48,9 +48,56 @@ namespace MainApp
 
             Button buttonD = FindViewById<Button>(Resource.Id.buttonD);
             buttonD.Click += (sender, e) => SendData("d");
+
+            FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
+            FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
+            FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
+            FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
         }
 
-        private void ShowPairedDevices(object sender, EventArgs e)
+        private void DeviceSelected(object sender, AdapterView.ItemClickEventArgs e)
+        {
+            bluetoothDevice = deviceList[e.Position];
+            ConnectToBluetooth();
+        }
+
+        private void ConnectToBluetooth()
+        {
+            try
+            {
+                if (bluetoothSocket != null && bluetoothSocket.IsConnected)
+                {
+                    bluetoothSocket.Close();
+                    bluetoothSocket = null;
+                }
+
+                bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
+                bluetoothSocket.Connect();
+                outStream = bluetoothSocket.OutputStream;
+
+                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
+                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
+                listViewDevices.Visibility = Android.Views.ViewStates.Gone;
+            }
+            catch (Exception ex)
+            {
+                Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show();
+            }
+        }
+
+
+        private void SendData(string data)
+        {
+            if (outStream != null && bluetoothSocket != null && bluetoothSocket.IsConnected)
+            {
+                byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data);
+                outStream.Write(buffer, 0, buffer.Length);
+            }
+        }
+
+        private void ShowPairedDevices()
         {
             var pairedDevices = bluetoothAdapter.BondedDevices;
             deviceList.Clear();
@@ -68,40 +115,36 @@ namespace MainApp
             listViewDevices.Visibility = Android.Views.ViewStates.Visible;
         }
 
-        private void DeviceSelected(object sender, AdapterView.ItemClickEventArgs e)
+        private void CheckBluetoothState()
         {
-            bluetoothDevice = deviceList[e.Position];
-            ConnectToBluetooth();
-        }
-
-        private void ConnectToBluetooth()
-        {
-            try
+            if (!bluetoothAdapter.IsEnabled)
             {
-                bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
-                bluetoothSocket.Connect();
-                outStream = bluetoothSocket.OutputStream;
-
-                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
-                listViewDevices.Visibility = Android.Views.ViewStates.Gone;
+                Intent enableBtIntent = new Intent(BluetoothAdapter.ActionRequestEnable);
+                StartActivityForResult(enableBtIntent, 1);
             }
-            catch (Exception ex)
+            else
             {
-                Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show();
+                ShowPairedDevices();
             }
         }
 
-        private void SendData(string data)
+        protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
-            if (outStream != null)
+            base.OnActivityResult(requestCode, resultCode, data);
+
+            if (requestCode == 1)
             {
-                byte[] buffer = System.Text.Encoding.ASCII.GetBytes(data);
-                outStream.Write(buffer, 0, buffer.Length);
+                if (resultCode == Result.Ok)
+                {
+                    ShowPairedDevices();
+                }
+                else
+                {
+                    Toast.MakeText(this, "Bluetooth must be enabled to connect.", ToastLength.Short).Show();
+                }
             }
         }
+
         private void DisconnectBluetooth()
         {
             if (bluetoothSocket != null)
@@ -116,13 +159,33 @@ namespace MainApp
             }
         }
 
-
         protected override void OnDestroy()
         {
             base.OnDestroy();
-            if (bluetoothSocket != null)
+            DisconnectBluetooth();
+            
+        }
+
+        [BroadcastReceiver(Enabled = true)]
+        public class BluetoothStateReceiver : BroadcastReceiver
+        {
+            public override void OnReceive(Context context, Intent intent)
             {
-                DisconnectBluetooth();
+                if (intent.Action == BluetoothAdapter.ActionStateChanged)
+                {
+                    int state = intent.GetIntExtra(BluetoothAdapter.ExtraState, BluetoothAdapter.Error);
+                    switch (state)
+                    {
+                        case (int)State.Off:
+                            Toast.MakeText(context, "Bluetooth został wyłączony", ToastLength.Long).Show();
+                            // Dodaj swoje dalsze akcje tutaj
+                            break;
+                        case (int)State.On:
+                            Toast.MakeText(context, "Bluetooth został włączony", ToastLength.Long).Show();
+                            // Dodaj swoje dalsze akcje tutaj
+                            break;
+                    }
+                }
             }
         }
     }
