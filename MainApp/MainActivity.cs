@@ -73,16 +73,15 @@ namespace MainApp
         {
             try
             {
-                if (bluetoothSocket != null && bluetoothSocket.IsConnected)
-                {
-                    bluetoothSocket.Close(); // Zamknięcie istniejącego połączenia
-                    bluetoothSocket = null;
-                }
+                DisconnectBluetooth(); // Rozłączenie z interfejsem w przypadku próby zmiany urządzenia
 
                 // Utworzenie nowego gniazda Bluetooth i połączenie
                 bluetoothSocket = bluetoothDevice.CreateRfcommSocketToServiceRecord(Java.Util.UUID.FromString("00001101-0000-1000-8000-00805F9B34FB"));
                 bluetoothSocket.Connect();
                 outStream = bluetoothSocket.OutputStream; // Pobranie strumienia wyjściowego
+
+                // Zmiana napisu na przycisku
+                FindViewById<Button>(Resource.Id.buttonConnect).Text = "Disconnect";
 
                 // Uwidocznienie przycisków po połączeniu
                 FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
@@ -94,6 +93,7 @@ namespace MainApp
             catch (Exception ex)
             {
                 Toast.MakeText(this, "Connection failed: " + ex.Message, ToastLength.Short).Show(); // Wyświetlenie komunikatu o błędzie
+                DisconnectBluetooth(); // Rozłączenie interfejsu w przypadku błędów komunikacyjnych
             }
         }
 
@@ -126,6 +126,10 @@ namespace MainApp
 
         private void CheckBluetoothState()
         {
+            // Wyłączenie interfejsu i zmiana napisu "Dissconnect" na "Connect"
+            DisconnectBluetooth();
+            FindViewById<Button>(Resource.Id.buttonConnect).Text = "Connect";
+
             if (!bluetoothAdapter.IsEnabled)
             {
                 Intent enableBtIntent = new Intent(BluetoothAdapter.ActionRequestEnable); // Utworzenie intencji włączenia Bluetooth
