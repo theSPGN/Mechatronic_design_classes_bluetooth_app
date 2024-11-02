@@ -2,11 +2,14 @@
 using Android.Bluetooth;
 using Android.Content;
 using Android.OS;
+using Android.Runtime;
+using Android.Util;
 using Android.Widget;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Android.Content.PM;
 
 namespace MainApp
 {
@@ -21,11 +24,29 @@ namespace MainApp
         ArrayAdapter<string> deviceListAdapter; // Adapter dla listy urządzeń
         List<BluetoothDevice> deviceList = new List<BluetoothDevice>(); // Lista urządzeń Bluetooth
         BluetoothStateReceiver bluetoothStateReceiver; // Odbiornik stanu Bluetooth
+        BluetoothDiscoveryReceiver discoveryReceiver; // Odbiornik niepodłączonych urządzeń
+        const int RequestLocationId = 0;
+
+        string[] PermissionsLocation =
+        {
+            Android.Manifest.Permission.AccessFineLocation,
+            Android.Manifest.Permission.AccessCoarseLocation
+        };
 
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
             SetContentView(Resource.Layout.activity_main); // Ustawienie widoku aktywności
+
+            GetLocationPermission();
+
+
+            // Inicjalizacja odbiornika odkrywania urządzeń
+            discoveryReceiver = new BluetoothDiscoveryReceiver();
+            discoveryReceiver.DeviceFound += OnDeviceFound;
+
+            RegisterReceiver(discoveryReceiver, new IntentFilter(BluetoothDevice.ActionFound));
+
 
             bluetoothAdapter = BluetoothAdapter.DefaultAdapter; // Pobranie domyślnego adaptera Bluetooth
 
@@ -62,6 +83,52 @@ namespace MainApp
             FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
         }
+        void GetLocationPermission()
+        {
+            if (CheckSelfPermission(Android.Manifest.Permission.AccessFineLocation) != (int)Permission.Granted ||
+                CheckSelfPermission(Android.Manifest.Permission.AccessCoarseLocation) != (int)Permission.Granted)
+            {
+                RequestPermissions(PermissionsLocation, RequestLocationId);
+            }
+        }
+        public override void OnRequestPermissionsResult(int requestCode, string[] permissions, [GeneratedEnum] Permission[] grantResults)
+        {
+            switch (requestCode)
+            {
+                case RequestLocationId:
+                    {
+                        if (grantResults.Length > 0 && grantResults[0] == Permission.Granted)
+                        {
+                            // Uprawnienia zostały przyznane
+                            DiscoverDevices();
+                        }
+                        else
+                        {
+                            // Uprawnienia nie zostały przyznane
+                            Toast.MakeText(this, "Location permissions are required to discover Bluetooth devices.", ToastLength.Short).Show();
+                        }
+                    }
+                    break;
+            }
+        }
+
+        private void DiscoverDevices()
+        {
+            if (bluetoothAdapter.IsDiscovering)
+            {
+                bluetoothAdapter.CancelDiscovery();
+            }
+            bool started = bluetoothAdapter.StartDiscovery();
+        }
+
+        private void OnDeviceFound(BluetoothDevice device)
+        {
+            if (!deviceList.Any(d => d.Address == device.Address))
+            {
+                deviceList.Add(device);
+                deviceListAdapter.Add(device.Name + "\n" + device.Address);
+            }
+        }
 
         private void DeviceSelected(object sender, AdapterView.ItemClickEventArgs e)
         {
@@ -89,6 +156,8 @@ namespace MainApp
                 FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
                 FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
                 listViewDevices.Visibility = Android.Views.ViewStates.Gone; // Ukrycie listy urządzeń
+
+                DiscoverDevices(); // Rozpoczęcie odkrywania urządzeń
             }
             catch (Exception ex)
             {
@@ -111,6 +180,8 @@ namespace MainApp
             var pairedDevices = bluetoothAdapter.BondedDevices; // Pobranie sparowanych urządzeń
             deviceList.Clear();
             deviceListAdapter.Clear();
+            GetLocationPermission();
+            DiscoverDevices();
 
             if (pairedDevices.Count > 0)
             {
@@ -179,6 +250,24 @@ namespace MainApp
             base.OnDestroy();
             DisconnectBluetooth(); // Rozłączenie Bluetooth przy niszczeniu aktywności
             UnregisterReceiver(bluetoothStateReceiver); // Wyrejestrowanie odbiornika stanu Bluetooth
+            UnregisterReceiver(discoveryReceiver); // Wyrejestrowanie odbiornika odkrywania urządzeń
+        }
+    }
+
+    [BroadcastReceiver(Enabled = true, Exported = false)]
+    [IntentFilter(new[] { BluetoothDevice.ActionFound })]
+    public class BluetoothDiscoveryReceiver : BroadcastReceiver
+    {
+        public event Action<BluetoothDevice> DeviceFound;
+        public event Action DiscoveryFinished;
+
+        public override void OnReceive(Context context, Intent intent)
+        {
+            if (intent.Action == BluetoothDevice.ActionFound)
+            {
+                var device = (BluetoothDevice)intent.GetParcelableExtra(BluetoothDevice.ExtraDevice);
+                DeviceFound?.Invoke(device);
+            }
         }
     }
 
