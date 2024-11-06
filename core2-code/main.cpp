@@ -77,7 +77,7 @@ void hMain()
 	// switch hSens3 to serial mode with default settings
 	hSens3.selectSerial();
 
-	// configure hSens3 serial with baudrate == 19200
+	// configure hSens3 serial with hc-05 module parameters
 	hSens3.serial.init(9600, Parity::None, StopBits::One);
 
 	// configure hMot(1-3) polarity
