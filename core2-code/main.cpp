@@ -3,31 +3,148 @@
 
 // Wiring diagrams (hSens3)
 // https://husarion.com/manuals/core2/#hardware-hext
-#include <hFramework.h>
 
 // connect hExt UART TX pin to hSens3 UART RX pin
 
+#include <hFramework.h>
+
+// TODO: manual control (verify directions of motors and it's power to control it safety)
+void go_forward()
+{
+	hMot1.setPower(500);
+	hMot2.setPower(500);
+}
+
+void go_backward()
+{
+	hMot1.setPower(-500);
+	hMot2.setPower(-500);
+}
+
+void go_left()
+{
+	hMot1.setPower(-500);
+	hMot2.setPower(500);
+}
+
+void go_right()
+{
+	hMot1.setPower(500);
+	hMot2.setPower(-500);
+}
+
+void place_domino_piece()
+{
+	hMot3.rotRel(90, 200, false, 100);
+	sys.delay(1000);
+	hMot3.rotRel(-90, 200, false, 100);
+}
+
+// TODO: automatic building functions (some kind of shape or curve line)
+void automatic_build_1()
+{
+}
+
+void automatic_build_2()
+{
+}
+
+void automatic_build_3()
+{
+}
+
+void automatic_build_4()
+{
+}
+
+void automatic_build_5()
+{
+}
+
+void automatic_build_6()
+{
+}
+
 void hMain()
 {
-	char received_data[20];
-	char data_to_send[] = {"example"};
-	sys.setSysLogDev(&devNull);								// turn off system logs on Serial
-	sys.setLogDev(&Serial);									// setting USB-serial as a default printf output
-	hExt.serial.init(19200, Parity::None, StopBits::One);	// configure hExt serial with baudrate == 19200, none parity and with one stop bit
-	hSens3.selectSerial();									// switch hSens3 to serial mode with default settings
-	hSens3.serial.init(19200, Parity::None, StopBits::One); // configure hSens3 serial with baudrate == 19200,
+	// creating a variable for messages
+	char received_data;
+
+	// turn off system logs on Serial
+	sys.setSysLogDev(&devNull);
+
+	// setting USB-serial as a default printf output
+	sys.setLogDev(&Serial);
+
+	// configure hExt serial with baudrate == 19200, none parity and with one stop bit
+	hExt.serial.init(19200, Parity::None, StopBits::One);
+
+	// switch hSens3 to serial mode with default settings
+	hSens3.selectSerial();
+
+	// configure hSens3 serial with baudrate == 19200
+	hSens3.serial.init(19200, Parity::None, StopBits::One);
+
+	// configure hMot(1-3) polarity
+	hMot1.setMotorPolarity(Polarity::Normal);
+	hMot2.setMotorPolarity(Polarity::Normal);
+	hMot3.setMotorPolarity(Polarity::Normal);
+
+	// configure hMot(1-3) encoder polarity
+	hMot1.setEncoderPolarity(Polarity::Reversed);
+	hMot2.setEncoderPolarity(Polarity::Reversed);
+	hMot3.setEncoderPolarity(Polarity::Reversed);
+
 	for (;;)
 	{
-		hExt.serial.write(data_to_send, sizeof(data_to_send));
-		if (hSens3.serial.read(received_data, sizeof(data_to_send), 500))
+		// signing serial data from hSens3 to the received_data memory cell
+		if (hSens3.serial.read(&received_data, sizeof(received_data), 500))
 		{
-			hLED2.toggle();
 			printf("hSens3.serial has received data: %s\r\n", received_data);
+
+			switch (received_data)
+			{
+			case 'a':
+				go_left();
+				break;
+			case 'b':
+				go_forward();
+				break;
+			case 'c':
+				go_right();
+				break;
+			case 'd':
+				go_backward();
+				break;
+			case 'x':
+				place_domino_piece();
+				break;
+			case 'q':
+				automatic_build_1();
+				break;
+			case 'w':
+				automatic_build_2();
+				break;
+			case 'e':
+				automatic_build_3();
+				break;
+			case 'r':
+				automatic_build_4();
+				break;
+			case 't':
+				automatic_build_5();
+				break;
+			case 'y':
+				automatic_build_6();
+				break;
+			default:
+				break;
+			}
 		}
 		else
 		{
 			printf("no data received - check connections!\r\n");
 		}
-		sys.delay(500);
+		sys.delay(100);
 	}
 }
