@@ -4,8 +4,6 @@
 // Wiring diagrams (hSens3)
 // https://husarion.com/manuals/core2/#hardware-hext
 
-// connect hExt UART TX pin to hSens3 UART RX pin
-
 #include <hFramework.h>
 
 // TODO: manual control (verify directions of motors and it's power to control it safety)
@@ -76,14 +74,11 @@ void hMain()
 	// setting USB-serial as a default printf output
 	sys.setLogDev(&Serial);
 
-	// configure hExt serial with baudrate == 19200, none parity and with one stop bit
-	hExt.serial.init(19200, Parity::None, StopBits::One);
-
 	// switch hSens3 to serial mode with default settings
 	hSens3.selectSerial();
 
 	// configure hSens3 serial with baudrate == 19200
-	hSens3.serial.init(19200, Parity::None, StopBits::One);
+	hSens3.serial.init(9600, Parity::None, StopBits::One);
 
 	// configure hMot(1-3) polarity
 	hMot1.setMotorPolarity(Polarity::Normal);
