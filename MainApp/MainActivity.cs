@@ -11,6 +11,7 @@ using System.IO;
 using System.Linq;
 using Android.Content.PM;
 using AndroidX.Annotations;
+using Android.Views;
 
 namespace MainApp
 {
@@ -27,6 +28,8 @@ namespace MainApp
         BluetoothStateReceiver bluetoothStateReceiver; // Odbiornik stanu Bluetooth
         BluetoothDiscoveryReceiver discoveryReceiver; // Odbiornik niepodłączonych urządzeń
         const int RequestLocationId = 0;
+        int _layout = Resource.Layout.manual;
+        String Connection_action = "Connect";
 
         string[] PermissionsLocation =
         {
@@ -37,7 +40,7 @@ namespace MainApp
         protected override void OnCreate(Bundle savedInstanceState)
         {
             base.OnCreate(savedInstanceState);
-            SetContentView(Resource.Layout.manual); // Ustawienie widoku aktywności
+            SetContentView(_layout); // Ustawienie widoku aktywności
 
             GetLocationPermission();
 
@@ -67,47 +70,23 @@ namespace MainApp
 
             // Pobranie przycisków i ustawienie obsługi kliknięć
             Button buttonA = FindViewById<Button>(Resource.Id.buttonA);
-            buttonA.Click += (sender, e) => SendData("a");
+            buttonA.Touch += (sender, e) => SendData("a");
 
             Button buttonB = FindViewById<Button>(Resource.Id.buttonB);
-            buttonB.Click += (sender, e) => SendData("b");
+            buttonB.Touch += (sender, e) => SendData("b");
 
             Button buttonC = FindViewById<Button>(Resource.Id.buttonC);
-            buttonC.Click += (sender, e) => SendData("c");
+            buttonC.Touch += (sender, e) => SendData("c");
 
             Button buttonD = FindViewById<Button>(Resource.Id.buttonD);
-            buttonD.Click += (sender, e) => SendData("d");
+            buttonD.Touch += (sender, e) => SendData("d");
 
             Button buttonX = FindViewById<Button>(Resource.Id.buttonX);
             buttonX.Click += (sender, e) => SendData("x");
-
             
             Button buttonAutomatic = FindViewById<Button>(Resource.Id.buttonAutomatic);
-            /*
             buttonAutomatic.Click += (sender, e) => SwitchWindow("automatic");
-            
-            
-            Button buttonQ = FindViewById<Button>(Resource.Id.buttonQ);
-            buttonQ.Click += (sender, e) => SendData("q");
 
-            Button buttonW = FindViewById<Button>(Resource.Id.buttonW);
-            buttonW.Click += (sender, e) => SendData("w");
-
-            Button buttonE = FindViewById<Button>(Resource.Id.buttonE);
-            buttonE.Click += (sender, e) => SendData("e");
-
-            Button buttonR = FindViewById<Button>(Resource.Id.buttonR);
-            buttonR.Click += (sender, e) => SendData("r");
-
-            Button buttonT = FindViewById<Button>(Resource.Id.buttonT);
-            buttonT.Click += (sender, e) => SendData("t");
-
-            Button buttonY = FindViewById<Button>(Resource.Id.buttonY);
-            buttonY.Click += (sender, e) => SendData("y");
-
-            Button buttonManual = FindViewById<Button>(Resource.Id.buttonManual);
-            buttonManual.Click += (sender, e) => SwitchWindow("manual");
-            */
             // Ukrycie przycisków na początku
             FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
@@ -115,15 +94,6 @@ namespace MainApp
             FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonX).Visibility = Android.Views.ViewStates.Gone;
             FindViewById<Button>(Resource.Id.buttonAutomatic).Visibility = Android.Views.ViewStates.Gone;
-            /*
-            FindViewById<Button>(Resource.Id.buttonQ).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonW).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonE).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonR).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonT).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonY).Visibility = Android.Views.ViewStates.Gone;
-            FindViewById<Button>(Resource.Id.buttonManual).Visibility = Android.Views.ViewStates.Gone;
-            */
         }
         void GetLocationPermission()
         {
@@ -190,25 +160,29 @@ namespace MainApp
                 outStream = bluetoothSocket.OutputStream; // Pobranie strumienia wyjściowego
 
                 // Zmiana napisu na przycisku
-                FindViewById<Button>(Resource.Id.buttonConnect).Text = "Disconnect";
+                Connection_action = "Disconnect";
+                FindViewById<Button>(Resource.Id.buttonConnect).Text = Connection_action;
 
                 // Uwidocznienie przycisków po połączeniu
-                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonX).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonAutomatic).Visibility = Android.Views.ViewStates.Visible;
-
-                /*
-                FindViewById<Button>(Resource.Id.buttonQ).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonW).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonE).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonR).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonT).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonY).Visibility = Android.Views.ViewStates.Visible;
-                FindViewById<Button>(Resource.Id.buttonManual).Visibility = Android.Views.ViewStates.Visible;
-                */
+                if (_layout == Resource.Layout.manual)
+                {
+                    FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonX).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonAutomatic).Visibility = Android.Views.ViewStates.Visible;
+                }
+                else if (_layout == Resource.Layout.automatic)
+                {
+                    FindViewById<Button>(Resource.Id.buttonQ).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonW).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonE).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonR).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonT).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonY).Visibility = Android.Views.ViewStates.Visible;
+                    FindViewById<Button>(Resource.Id.buttonManual).Visibility = Android.Views.ViewStates.Visible;
+                }
                 listViewDevices.Visibility = Android.Views.ViewStates.Gone; // Ukrycie listy urządzeń
 
                 DiscoverDevices(); // Rozpoczęcie odkrywania urządzeń
@@ -231,7 +205,64 @@ namespace MainApp
 
         private void SwitchWindow(string data)
         {
-            SetContentView((data == "manual") ? Resource.Layout.manual : Resource.Layout.automatic);
+            _layout = (data == "manual") ? Resource.Layout.manual : Resource.Layout.automatic;
+            SetContentView(_layout);
+
+            Button buttonConnect = FindViewById<Button>(Resource.Id.buttonConnect); // Pobranie przycisku połączenia
+            buttonConnect.Click += (sender, e) => CheckBluetoothState(); // Ustawienie obsługi kliknięcia przycisku połączenia
+            FindViewById<Button>(Resource.Id.buttonConnect).Text = Connection_action;
+
+            listViewDevices = FindViewById<ListView>(Resource.Id.listViewDevices); // Pobranie listy urządzeń
+            listViewDevices.ItemClick += DeviceSelected; // Ustawienie obsługi kliknięcia elementu listy
+
+            deviceListAdapter = new ArrayAdapter<string>(this, Android.Resource.Layout.SimpleListItem1); // Inicjalizacja adaptera listy urządzeń
+            listViewDevices.Adapter = deviceListAdapter; // Ustawienie adaptera dla listy urządzeń
+
+
+            if (_layout == Resource.Layout.automatic)
+            {
+                Button buttonQ = FindViewById<Button>(Resource.Id.buttonQ);
+                buttonQ.Click += (sender, e) => SendData("q");
+
+                Button buttonW = FindViewById<Button>(Resource.Id.buttonW);
+                buttonW.Click += (sender, e) => SendData("w");
+
+                Button buttonE = FindViewById<Button>(Resource.Id.buttonE);
+                buttonE.Click += (sender, e) => SendData("e");
+
+                Button buttonR = FindViewById<Button>(Resource.Id.buttonR);
+                buttonR.Click += (sender, e) => SendData("r");
+
+                Button buttonT = FindViewById<Button>(Resource.Id.buttonT);
+                buttonT.Click += (sender, e) => SendData("t");
+
+                Button buttonY = FindViewById<Button>(Resource.Id.buttonY);
+                buttonY.Click += (sender, e) => SendData("y");
+
+                Button buttonManual = FindViewById<Button>(Resource.Id.buttonManual);
+                buttonManual.Click += (sender, e) => SwitchWindow("manual");
+            }
+            else if (_layout == Resource.Layout.manual)
+            {
+                Button buttonA = FindViewById<Button>(Resource.Id.buttonA);
+                buttonA.Touch += (sender, e) => SendData("a");
+
+                Button buttonB = FindViewById<Button>(Resource.Id.buttonB);
+                buttonB.Touch += (sender, e) => SendData("b");
+
+                Button buttonC = FindViewById<Button>(Resource.Id.buttonC);
+                buttonC.Touch += (sender, e) => SendData("c");
+
+                Button buttonD = FindViewById<Button>(Resource.Id.buttonD);
+                buttonD.Touch += (sender, e) => SendData("d");
+
+                Button buttonX = FindViewById<Button>(Resource.Id.buttonX);
+                buttonX.Click += (sender, e) => SendData("x");
+
+                Button buttonAutomatic = FindViewById<Button>(Resource.Id.buttonAutomatic);
+                buttonAutomatic.Click += (sender, e) => SwitchWindow("automatic");
+            }
+
         }
 
         private void ShowPairedDevices()
@@ -258,7 +289,8 @@ namespace MainApp
         {
             // Wyłączenie interfejsu i zmiana napisu "Dissconnect" na "Connect"
             DisconnectBluetooth();
-            FindViewById<Button>(Resource.Id.buttonConnect).Text = "Connect";
+            Connection_action = "Connect";
+            FindViewById<Button>(Resource.Id.buttonConnect).Text = Connection_action;
 
             if (!bluetoothAdapter.IsEnabled)
             {
@@ -296,22 +328,25 @@ namespace MainApp
                 bluetoothSocket = null;
 
                 // Ukrycie przycisków po rozłączeniu
-                FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonX).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonAutomatic).Visibility = Android.Views.ViewStates.Gone;
-
-                /*
-                FindViewById<Button>(Resource.Id.buttonQ).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonW).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonE).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonR).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonT).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonY).Visibility = Android.Views.ViewStates.Gone;
-                FindViewById<Button>(Resource.Id.buttonManual).Visibility = Android.Views.ViewStates.Gone;
-                */
+                if (_layout == Resource.Layout.manual)
+                {
+                    FindViewById<Button>(Resource.Id.buttonA).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonB).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonC).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonD).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonX).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonAutomatic).Visibility = Android.Views.ViewStates.Gone;
+                }
+                else if (_layout == Resource.Layout.automatic)
+                {
+                    FindViewById<Button>(Resource.Id.buttonQ).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonW).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonE).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonR).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonT).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonY).Visibility = Android.Views.ViewStates.Gone;
+                    FindViewById<Button>(Resource.Id.buttonManual).Visibility = Android.Views.ViewStates.Gone;
+                }
                 listViewDevices.Visibility = Android.Views.ViewStates.Gone; // Ukrycie listy urządzeń
             }
         }
