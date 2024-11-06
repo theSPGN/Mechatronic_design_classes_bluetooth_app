@@ -1,5 +1,5 @@
 #!/bin/bash
-        cd /home/thespgn/projekt_na_studia || exit 1
+        cd /home/thespgn/Mechatronic_design_classes_bluetooth_app/core2-code || exit 1
         rm .term 2>/dev/null
         mkfifo .term
         x-terminal-emulator -e "cat $PWD/.term" &

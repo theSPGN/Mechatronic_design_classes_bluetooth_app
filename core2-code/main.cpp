@@ -1,36 +1,33 @@
+// Bluetooth hc-05 connection code:
+// https://github.com/husarion/hFramework/blob/master/examples/core2/Serial_serial_config.cpp
+
+// Wiring diagrams (hSens3)
+// https://husarion.com/manuals/core2/#hardware-hext
 #include <hFramework.h>
+
+// connect hExt UART TX pin to hSens3 UART RX pin
 
 void hMain()
 {
-	// Set the log device to the default serial port
-	sys.setLogDev(&Serial);
-
-	// Initialize motor H1
-	hMot1.setPower(0); // Ensure motor is off initially
-
-	while (true)
+	char received_data[20];
+	char data_to_send[] = {"example"};
+	sys.setSysLogDev(&devNull);								// turn off system logs on Serial
+	sys.setLogDev(&Serial);									// setting USB-serial as a default printf output
+	hExt.serial.init(19200, Parity::None, StopBits::One);	// configure hExt serial with baudrate == 19200, none parity and with one stop bit
+	hSens3.selectSerial();									// switch hSens3 to serial mode with default settings
+	hSens3.serial.init(19200, Parity::None, StopBits::One); // configure hSens3 serial with baudrate == 19200,
+	for (;;)
 	{
-		// Check if data is available on the primary serial port
-		if (Serial.available())
+		hExt.serial.write(data_to_send, sizeof(data_to_send));
+		if (hSens3.serial.read(received_data, sizeof(data_to_send), 500))
 		{
-			// Read the data from the serial port
-			char data = Serial.getch();
-
-			// Print the data to the serial monitor
-			Serial.printf("Received: %c\n", data);
-
-			// Check if the received data is 'a'
-			if (data == 'a')
-			{
-				// Turn on motor H1
-				hMot1.setPower(500); // Set motor power (adjust as needed)
-			}
-			else
-			{
-				// Turn off motor H1 if any other character is received
-				hMot1.setPower(0);
-			}
+			hLED2.toggle();
+			printf("hSens3.serial has received data: %s\r\n", received_data);
 		}
-		sys.delay(100);
+		else
+		{
+			printf("no data received - check connections!\r\n");
+		}
+		sys.delay(500);
 	}
 }
