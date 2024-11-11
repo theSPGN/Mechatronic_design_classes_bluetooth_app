@@ -6,6 +6,8 @@
 
 #include <hFramework.h>
 
+int pieces = 7;
+
 // TODO: manual control (verify directions of motors and it's power to control it safety)
 void go_forward()
 {
@@ -39,34 +41,82 @@ void place_domino_piece()
 }
 
 // TODO: automatic building functions (some kind of shape or curve line)
-void automatic_build_1()
+void automatic_build_1(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(180, 500);
+		hMot2.rotRel(180, 500, true);
+		place_domino_piece();
+	}
+	busy = false;
 }
 
-void automatic_build_2()
+void automatic_build_2(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(-180, 500);
+		hMot2.rotRel(-180, 500, true);
+	}
+	busy = false;
 }
 
-void automatic_build_3()
+void automatic_build_3(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(100, 500);
+		hMot2.rotRel(180, 500, true);
+		place_domino_piece();
+	}
+	busy = false;
 }
 
-void automatic_build_4()
+void automatic_build_4(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(-100, 500);
+		hMot2.rotRel(-180, 500, true);
+	}
+	busy = false;
 }
 
-void automatic_build_5()
+void automatic_build_5(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(180, 500);
+		hMot2.rotRel(100, 500, true);
+		place_domino_piece();
+	}
+	busy = false;
 }
 
-void automatic_build_6()
+void automatic_build_6(bool &busy)
 {
+	busy = true;
+	for (int piece = 0; piece < pieces; piece++)
+	{
+		hMot1.rotRel(-180, 500);
+		hMot2.rotRel(-100, 500, true);
+	}
+	busy = false;
 }
 
 void hMain()
 {
 	// creating a variable for messages
 	char received_data;
+
+	// creating a variable that will block other functions after fcn callback
+	bool busy = false;
 
 	// turn off system logs on Serial
 	sys.setSysLogDev(&devNull);
@@ -93,7 +143,7 @@ void hMain()
 	for (;;)
 	{
 		// signing serial data from hSens3 to the received_data memory cell
-		if (hSens3.serial.read(&received_data, sizeof(received_data), 500))
+		if (hSens3.serial.read(&received_data, sizeof(received_data), 500) && busy == false)
 		{
 			printf("hSens3.serial has received data: %s\r\n", received_data);
 
@@ -115,22 +165,22 @@ void hMain()
 				place_domino_piece();
 				break;
 			case 'q':
-				automatic_build_1();
+				automatic_build_1(busy);
 				break;
 			case 'w':
-				automatic_build_2();
+				automatic_build_2(busy);
 				break;
 			case 'e':
-				automatic_build_3();
+				automatic_build_3(busy);
 				break;
 			case 'r':
-				automatic_build_4();
+				automatic_build_4(busy);
 				break;
 			case 't':
-				automatic_build_5();
+				automatic_build_5(busy);
 				break;
 			case 'y':
-				automatic_build_6();
+				automatic_build_6(busy);
 				break;
 			default:
 				break;
@@ -138,8 +188,10 @@ void hMain()
 		}
 		else
 		{
+			hMot1.stop();
+			hMot2.stop();
 			printf("no data received - check connections!\r\n");
 		}
-		sys.delay(100);
+		sys.delay(10);
 	}
 }
