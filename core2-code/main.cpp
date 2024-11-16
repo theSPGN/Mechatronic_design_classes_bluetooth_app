@@ -5,49 +5,49 @@
 // https://husarion.com/manuals/core2/#hardware-hext
 
 #include <hFramework.h>
+#include <time.h>
+#define PIECES 7
 
-int pieces = 7;
-
-// TODO: manual control (verify directions of motors and it's power to control it safety)
 void go_forward()
 {
-	hMot2.rotAbs(0, 100, true, INFINITE);
-	hMot1.setPower(500);
+	hMot2.rotAbs(0, 500, false, INFINITE);
+	hMot1.setPower(1000);
 }
 
 void go_backward()
 {
-	hMot2.rotAbs(0, 100, true, INFINITE);
-	hMot1.setPower(-500);
+	hMot2.rotAbs(0, 500, false, INFINITE);
+	hMot1.setPower(-1000);
 }
 
 void go_left()
 {
-	hMot2.rotAbs(90, 100, true, INFINITE);
+	hMot2.rotAbs(90, 500, false, INFINITE);
 	hMot1.setPower(500);
 }
 
 void go_right()
 {
-	hMot2.rotAbs(-90, 100, true, INFINITE);
+	hMot2.rotAbs(-90, 500, false, INFINITE);
 	hMot1.setPower(500);
 }
 
 void place_domino_piece()
 {
-	hMot3.rotAbs(90, 200, true, INFINITE);
-	hMot3.rotAbs(-90, 200, true, INFINITE);
+	hMot1.setPower(0);
+	hMot3.rotAbs(90, 1000, true, INFINITE);
+	hMot3.rotAbs(-90, 1000, true, INFINITE);
 	hMot4.rotAbs(90, 200, true, INFINITE);
-	hMot4.rotAbs(-90, 200, true, INFINITE);
+	hMot4.rotAbs(-90, 500, true, INFINITE);
 }
 
-// TODO: automatic building functions (some kind of shape or curve line)
 void automatic_build_1(bool &busy)
 {
 	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
+	for (int piece = 0; piece < PIECES; piece++)
 	{
-		continue;
+		place_domino_piece();
+		hMot1.rotRel(360 * 3, 500, true, INFINITE);
 	}
 	busy = false;
 }
@@ -55,55 +55,45 @@ void automatic_build_1(bool &busy)
 void automatic_build_2(bool &busy)
 {
 	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
+	for (int piece = 0; piece < PIECES; piece++)
 	{
-		continue;
+		hMot1.rotRel(-360 * 3, 500, true, INFINITE);
 	}
 	busy = false;
 }
 
 void automatic_build_3(bool &busy)
 {
-	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
-	{
-		continue;
-	}
-	busy = false;
+	hMot2.rotAbs(60, 500, true, INFINITE);
+	automatic_build_1(busy);
+	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_4(bool &busy)
 {
-	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
-	{
-		continue;
-	}
-	busy = false;
+	hMot2.rotAbs(60, 500, true, INFINITE);
+	automatic_build_2(busy);
+	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_5(bool &busy)
 {
-	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
-	{
-		continue;
-	}
-	busy = false;
+	hMot2.rotAbs(-60, 500, true, INFINITE);
+	automatic_build_1(busy);
+	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_6(bool &busy)
 {
-	busy = true;
-	for (int piece = 0; piece < pieces; piece++)
-	{
-		continue;
-	}
-	busy = false;
+	hMot2.rotAbs(-60, 500, true, INFINITE);
+	automatic_build_2(busy);
+	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void hMain()
 {
+	// creating a structures for time storage
+	struct timespec time_now, btn_drive_pressed_time;
 	// creating a variable for messages
 	char received_data[1];
 
@@ -128,11 +118,14 @@ void hMain()
 	hMot3.setEncoderPolarity(Polarity::Reversed);
 	hMot4.setEncoderPolarity(Polarity::Reversed);
 
-	// Reset encoder count to zero
+	// reset encoder count to zero
 	hMot1.resetEncoderCnt();
 	hMot2.resetEncoderCnt();
 	hMot3.resetEncoderCnt();
 	hMot4.resetEncoderCnt();
+
+	// read init time to prevent subtraction of empty variables
+	clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 
 	// configure hSens3 serial with hc-05 module parameters
 	hExt.serial.init(9600, Parity::None, StopBits::One);
@@ -148,15 +141,19 @@ void hMain()
 			{
 			case 'a':
 				go_left();
+				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'b':
 				go_forward();
+				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'c':
 				go_right();
+				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'd':
 				go_backward();
+				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'x':
 				place_domino_piece();
@@ -185,7 +182,9 @@ void hMain()
 		}
 		else
 		{
-			hMot1.setPower(0);
+			clock_gettime(CLOCK_REALTIME, &time_now);
+			if (time_now.tv_nsec - btn_drive_pressed_time.tv_nsec > 1000 * 500)
+				hMot1.setPower(0);
 		}
 	}
 }
