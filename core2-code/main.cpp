@@ -8,92 +8,106 @@
 #include <time.h>
 #define PIECES 7
 
+void encoder()
+{
+	while (true)
+	{
+		Serial.printf("pos1: %d\n", hMot1.getEncoderCnt());
+		Serial.printf("pos2: %d\n", hMot2.getEncoderCnt());
+		Serial.printf("pos3: %d\n", hMot3.getEncoderCnt());
+		Serial.printf("pos4: %d\n", hMot4.getEncoderCnt());
+		hLED1.toggle();
+		sys.delay(100);
+	}
+}
+
 void go_forward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.setPower(1000);
+	hMot1.rotRel(-50, 1000, true, INFINITE);
+	// hMot1.setPower(1000);
 }
 
 void go_backward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.setPower(-1000);
+	hMot1.rotRel(50, 1000, true, INFINITE);
+	// hMot1.setPower(-1000);
 }
 
 void go_left()
 {
 	hMot2.rotAbs(90, 500, false, INFINITE);
-	hMot1.setPower(500);
+	hMot1.rotRel(-50, 1000, false, INFINITE);
 }
 
 void go_right()
 {
 	hMot2.rotAbs(-90, 500, false, INFINITE);
-	hMot1.setPower(500);
+	hMot1.rotRel(-50, 1000, false, INFINITE);
 }
 
 void place_domino_piece()
 {
+	hMot3.resetEncoderCnt();
+	hMot4.resetEncoderCnt();
 	hMot1.setPower(0);
-	hMot3.rotAbs(90, 1000, true, INFINITE);
-	hMot3.rotAbs(-90, 1000, true, INFINITE);
-	hMot4.rotAbs(90, 200, true, INFINITE);
-	hMot4.rotAbs(-90, 500, true, INFINITE);
+	hMot3.rotAbs(450, 500, true, INFINITE);
+	hMot3.rotAbs(0, 500, true, INFINITE);
+	hMot4.rotAbs(600, 500, true, INFINITE);
+	hMot4.rotAbs(0, 500, true, INFINITE);
 }
 
-void automatic_build_1(bool &busy)
+void automatic_build_1()
 {
-	busy = true;
 	for (int piece = 0; piece < PIECES; piece++)
 	{
 		place_domino_piece();
-		hMot1.rotRel(360 * 3, 500, true, INFINITE);
-	}
-	busy = false;
-}
-
-void automatic_build_2(bool &busy)
-{
-	busy = true;
-	for (int piece = 0; piece < PIECES; piece++)
-	{
 		hMot1.rotRel(-360 * 3, 500, true, INFINITE);
 	}
-	busy = false;
 }
 
-void automatic_build_3(bool &busy)
+void automatic_build_2()
+{
+	for (int piece = 0; piece < PIECES; piece++)
+	{
+		hMot1.rotRel(360 * 3, 500, true, INFINITE);
+	}
+}
+
+void automatic_build_3()
 {
 	hMot2.rotAbs(60, 500, true, INFINITE);
-	automatic_build_1(busy);
+	automatic_build_1();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
-void automatic_build_4(bool &busy)
+void automatic_build_4()
 {
 	hMot2.rotAbs(60, 500, true, INFINITE);
-	automatic_build_2(busy);
+	automatic_build_2();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
-void automatic_build_5(bool &busy)
+void automatic_build_5()
 {
 	hMot2.rotAbs(-60, 500, true, INFINITE);
-	automatic_build_1(busy);
+	automatic_build_1();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
-void automatic_build_6(bool &busy)
+void automatic_build_6()
 {
 	hMot2.rotAbs(-60, 500, true, INFINITE);
-	automatic_build_2(busy);
+	automatic_build_2();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void hMain()
 {
+	sys.taskCreate(encoder);
 	// creating a structures for time storage
-	struct timespec time_now, btn_drive_pressed_time;
+	// struct timespec time_now, btn_drive_pressed_time;
 	// creating a variable for messages
 	char received_data[1];
 
@@ -124,9 +138,6 @@ void hMain()
 	hMot3.resetEncoderCnt();
 	hMot4.resetEncoderCnt();
 
-	// read init time to prevent subtraction of empty variables
-	clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
-
 	// configure hSens3 serial with hc-05 module parameters
 	hExt.serial.init(9600, Parity::None, StopBits::One);
 	for (;;)
@@ -141,40 +152,36 @@ void hMain()
 			{
 			case 'a':
 				go_left();
-				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'b':
 				go_forward();
-				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'c':
 				go_right();
-				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'd':
 				go_backward();
-				clock_gettime(CLOCK_REALTIME, &btn_drive_pressed_time);
 				break;
 			case 'x':
 				place_domino_piece();
 				break;
 			case 'q':
-				automatic_build_1(busy);
+				automatic_build_1();
 				break;
 			case 'w':
-				automatic_build_2(busy);
+				automatic_build_2();
 				break;
 			case 'e':
-				automatic_build_3(busy);
+				automatic_build_3();
 				break;
 			case 'r':
-				automatic_build_4(busy);
+				automatic_build_4();
 				break;
 			case 't':
-				automatic_build_5(busy);
+				automatic_build_5();
 				break;
 			case 'y':
-				automatic_build_6(busy);
+				automatic_build_6();
 				break;
 			default:
 				break;
@@ -182,9 +189,7 @@ void hMain()
 		}
 		else
 		{
-			clock_gettime(CLOCK_REALTIME, &time_now);
-			if (time_now.tv_nsec - btn_drive_pressed_time.tv_nsec > 1000 * 500)
-				hMot1.setPower(0);
+			continue;
 		}
 	}
 }
