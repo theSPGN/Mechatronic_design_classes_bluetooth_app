@@ -189,7 +189,15 @@ void hMain()
 		}
 		else
 		{
+<<<<<<< HEAD
 			continue;
+=======
+			clock_gettime(CLOCK_REALTIME, &time_now);
+			if ((time_now.tv_sec - btn_drive_pressed_time.tv_sec) * 1000 + (time_now.tv_nsec - btn_drive_pressed_time.tv_nsec) / 1000000 > 500) 
+				hMot1.setPower(0);
+
+>>>>>>> 24c9d35de839383c694563e04400e7365be4614f
 		}
+	sys.delay(10);
 	}
 }
