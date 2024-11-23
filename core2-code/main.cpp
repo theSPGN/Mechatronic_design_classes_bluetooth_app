@@ -6,10 +6,10 @@
 
 #include <hFramework.h>
 #include <DistanceSensor.h>
-#define PIECES 10
-#define DISTANCE_BETWEEN 250
+#define PIECES 9
+#define DISTANCE_BETWEEN 220
 #define ROTATE_WHEEL_ANGLE 90
-#define ROT_MOVE_ANGLE 50
+#define ROT_MOVE_ANGLE 90
 #define TIME_DIFF 500000
 using namespace hModules;
 
@@ -27,34 +27,33 @@ void encoder()
 		Serial.printf("pos4: %d\n", hMot4.getEncoderCnt());
 		dist = sens.getDistance();
 		Serial.printf("sensor: %d\n", dist);
-		sys.delay(100);
 	}
 }
 
 void go_forward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.setPower(-1000);
+	hMot1.setPower(-200);
 }
 
 void go_backward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.setPower(1000);
+	hMot1.setPower(200);
 }
 
 void go_left()
 {
-	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
+	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 200, false, INFINITE);
 	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
-	hMot1.setPower(-1000);
+	hMot1.setPower(-200);
 }
 
 void go_right()
 {
-	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
+	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 200, false, INFINITE);
 	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
-	hMot1.setPower(-1000);
+	hMot1.setPower(-200);
 }
 
 void place_domino_piece()
@@ -62,10 +61,10 @@ void place_domino_piece()
 	hMot3.resetEncoderCnt();
 	hMot4.resetEncoderCnt();
 	hMot1.setPower(0);
-	hMot3.rotAbs(350, 500, true, INFINITE);
-	hMot3.rotAbs(0, 1000, true, INFINITE);
-	sys.delay(300);
-	hMot4.rotAbs(600, 400, true, INFINITE);
+	sys.delay(1200);
+	hMot3.rotAbs(720, 200, true, INFINITE);
+	sys.delay(600);
+	hMot4.rotAbs(800, 200, true, INFINITE);
 	hMot4.rotAbs(0, 400, true, INFINITE);
 }
 
@@ -74,10 +73,11 @@ void automatic_build_1()
 	for (int piece = 0; piece < PIECES; piece++)
 	{
 		dist = sens.getDistance();
-		if (dist < 15)
+		if (dist < 15 && dist != -1)
 			break;
 		place_domino_piece();
-		hMot1.rotRel(-DISTANCE_BETWEEN, 500, true, 3000);
+		sys.delay(600);
+		hMot1.rotRel(-DISTANCE_BETWEEN, 300, true, 3000);
 	}
 }
 
@@ -120,7 +120,7 @@ void hMain()
 	int start_ride_time, end_ride_time;
 
 	// encoder monitoring
-	// sys.taskCreate(encoder);
+	sys.taskCreate(encoder);
 
 	// creating a structures for time storage
 	// struct timespec time_now, btn_drive_pressed_time;
@@ -185,31 +185,37 @@ void hMain()
 			case 'q':
 				automatic_build_1();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			case 'w':
 				automatic_build_2();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			case 'e':
 				automatic_build_3();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			case 'r':
 				automatic_build_4();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			case 't':
 				automatic_build_5();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			case 'y':
 				automatic_build_6();
 				hExt.serial.init(9600, Parity::None, StopBits::One);
+				hMot1.stopRegulation();
 
 				break;
 			default:
