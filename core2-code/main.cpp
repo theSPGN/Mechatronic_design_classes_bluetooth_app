@@ -7,10 +7,10 @@
 #include <hFramework.h>
 #include <DistanceSensor.h>
 #define PIECES 10
-#define DISTANCE_BETWEEN 180
-#define ROTATE_WHEEL_ANGLE 35
+#define DISTANCE_BETWEEN 250
+#define ROTATE_WHEEL_ANGLE 90
 #define ROT_MOVE_ANGLE 50
-#define TIME_DIFF 350000
+#define TIME_DIFF 500000
 using namespace hModules;
 
 int dist = 100;
@@ -34,14 +34,12 @@ void encoder()
 void go_forward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
 	hMot1.setPower(-1000);
 }
 
 void go_backward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	// hMot1.rotRel(ROT_MOVE_ANGLE, 1000, true, INFINITE);
 	hMot1.setPower(1000);
 }
 
@@ -66,6 +64,7 @@ void place_domino_piece()
 	hMot1.setPower(0);
 	hMot3.rotAbs(350, 500, true, INFINITE);
 	hMot3.rotAbs(0, 1000, true, INFINITE);
+	sys.delay(300);
 	hMot4.rotAbs(600, 400, true, INFINITE);
 	hMot4.rotAbs(0, 400, true, INFINITE);
 }
@@ -75,16 +74,16 @@ void automatic_build_1()
 	for (int piece = 0; piece < PIECES; piece++)
 	{
 		dist = sens.getDistance();
-		if (dist < 60 && dist != -1)
+		if (dist < 15)
 			break;
 		place_domino_piece();
-		hMot1.rotRel(-DISTANCE_BETWEEN, 500, true, INFINITE);
+		hMot1.rotRel(-DISTANCE_BETWEEN, 500, true, 3000);
 	}
 }
 
 void automatic_build_2()
 {
-	hMot1.rotRel(DISTANCE_BETWEEN + 30, 500, true, INFINITE);
+	hMot1.rotRel(DISTANCE_BETWEEN + 30, 500, true, 3000);
 }
 
 void automatic_build_3()
@@ -126,10 +125,7 @@ void hMain()
 	// creating a structures for time storage
 	// struct timespec time_now, btn_drive_pressed_time;
 	// creating a variable for messages
-	char received_data[1];
-
-	// creating a variable that will block other functions after fcn callback
-	bool busy = false;
+	char received_data[20] = {0};
 
 	// turn off system logs on Serial
 	sys.setSysLogDev(&devNull);
@@ -160,9 +156,8 @@ void hMain()
 
 	for (;;)
 	{
-		received_data[0] = '0';
 		// signing serial data from hSens3 to the received_data memory cell
-		if (hExt.serial.read(&received_data, sizeof(received_data), 0) && busy == false)
+		if (hExt.serial.read(&received_data, sizeof(received_data), 100))
 		{
 			printf("%s", received_data);
 
@@ -189,21 +184,33 @@ void hMain()
 				break;
 			case 'q':
 				automatic_build_1();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			case 'w':
 				automatic_build_2();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			case 'e':
 				automatic_build_3();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			case 'r':
 				automatic_build_4();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			case 't':
 				automatic_build_5();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			case 'y':
 				automatic_build_6();
+				hExt.serial.init(9600, Parity::None, StopBits::One);
+
 				break;
 			default:
 				break;
