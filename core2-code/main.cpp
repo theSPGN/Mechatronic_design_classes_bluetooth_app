@@ -5,8 +5,17 @@
 // https://husarion.com/manuals/core2/#hardware-hext
 
 #include <hFramework.h>
-#include <time.h>
+#include <DistanceSensor.h>
 #define PIECES 7
+#define DISTANCE_BETWEEN 360
+#define ROTATE_WHEEL_ANGLE 30
+#define ROT_MOVE_ANGLE 50
+
+using namespace hModules;
+
+int dist = 100;
+// turn on sensor
+DistanceSensor sens(hSens6);
 
 void encoder()
 {
@@ -16,7 +25,8 @@ void encoder()
 		Serial.printf("pos2: %d\n", hMot2.getEncoderCnt());
 		Serial.printf("pos3: %d\n", hMot3.getEncoderCnt());
 		Serial.printf("pos4: %d\n", hMot4.getEncoderCnt());
-		hLED1.toggle();
+		dist = sens.getDistance();
+		Serial.printf("sensor: %d\n", dist);
 		sys.delay(100);
 	}
 }
@@ -24,27 +34,27 @@ void encoder()
 void go_forward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.rotRel(-50, 1000, true, INFINITE);
+	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
 	// hMot1.setPower(1000);
 }
 
 void go_backward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.rotRel(50, 1000, true, INFINITE);
+	hMot1.rotRel(ROT_MOVE_ANGLE, 1000, true, INFINITE);
 	// hMot1.setPower(-1000);
 }
 
 void go_left()
 {
-	hMot2.rotAbs(90, 500, false, INFINITE);
-	hMot1.rotRel(-50, 1000, false, INFINITE);
+	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
+	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
 }
 
 void go_right()
 {
-	hMot2.rotAbs(-90, 500, false, INFINITE);
-	hMot1.rotRel(-50, 1000, false, INFINITE);
+	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
+	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
 }
 
 void place_domino_piece()
@@ -54,16 +64,19 @@ void place_domino_piece()
 	hMot1.setPower(0);
 	hMot3.rotAbs(450, 500, true, INFINITE);
 	hMot3.rotAbs(0, 500, true, INFINITE);
-	hMot4.rotAbs(600, 500, true, INFINITE);
-	hMot4.rotAbs(0, 500, true, INFINITE);
+	hMot4.rotAbs(600, 400, true, INFINITE);
+	hMot4.rotAbs(0, 400, true, INFINITE);
 }
 
 void automatic_build_1()
 {
 	for (int piece = 0; piece < PIECES; piece++)
 	{
+		dist = sens.getDistance();
+		if (dist < 30)
+			break;
 		place_domino_piece();
-		hMot1.rotRel(-360 * 3, 500, true, INFINITE);
+		hMot1.rotRel(-DISTANCE_BETWEEN, 500, true, INFINITE);
 	}
 }
 
@@ -71,41 +84,43 @@ void automatic_build_2()
 {
 	for (int piece = 0; piece < PIECES; piece++)
 	{
-		hMot1.rotRel(360 * 3, 500, true, INFINITE);
+		hMot1.rotRel(DISTANCE_BETWEEN + 30, 500, true, INFINITE);
 	}
 }
 
 void automatic_build_3()
 {
-	hMot2.rotAbs(60, 500, true, INFINITE);
+	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 500, true, INFINITE);
 	automatic_build_1();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_4()
 {
-	hMot2.rotAbs(60, 500, true, INFINITE);
+	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 500, true, INFINITE);
 	automatic_build_2();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_5()
 {
-	hMot2.rotAbs(-60, 500, true, INFINITE);
+	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 500, true, INFINITE);
 	automatic_build_1();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void automatic_build_6()
 {
-	hMot2.rotAbs(-60, 500, true, INFINITE);
+	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 500, true, INFINITE);
 	automatic_build_2();
 	hMot2.rotAbs(0, 500, true, INFINITE);
 }
 
 void hMain()
 {
+	// encoder monitoring
 	sys.taskCreate(encoder);
+
 	// creating a structures for time storage
 	// struct timespec time_now, btn_drive_pressed_time;
 	// creating a variable for messages
@@ -140,6 +155,7 @@ void hMain()
 
 	// configure hSens3 serial with hc-05 module parameters
 	hExt.serial.init(9600, Parity::None, StopBits::One);
+
 	for (;;)
 	{
 		received_data[0] = '0';
