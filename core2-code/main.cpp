@@ -6,11 +6,11 @@
 
 #include <hFramework.h>
 #include <DistanceSensor.h>
-#define PIECES 7
-#define DISTANCE_BETWEEN 360
-#define ROTATE_WHEEL_ANGLE 30
+#define PIECES 10
+#define DISTANCE_BETWEEN 180
+#define ROTATE_WHEEL_ANGLE 35
 #define ROT_MOVE_ANGLE 50
-
+#define TIME_DIFF 350000
 using namespace hModules;
 
 int dist = 100;
@@ -34,27 +34,29 @@ void encoder()
 void go_forward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
-	// hMot1.setPower(1000);
+	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	hMot1.setPower(-1000);
 }
 
 void go_backward()
 {
 	hMot2.rotAbs(0, 500, false, INFINITE);
-	hMot1.rotRel(ROT_MOVE_ANGLE, 1000, true, INFINITE);
-	// hMot1.setPower(-1000);
+	// hMot1.rotRel(ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	hMot1.setPower(1000);
 }
 
 void go_left()
 {
 	hMot2.rotAbs(-ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
-	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	hMot1.setPower(-1000);
 }
 
 void go_right()
 {
 	hMot2.rotAbs(ROTATE_WHEEL_ANGLE, 500, false, INFINITE);
-	hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	// hMot1.rotRel(-ROT_MOVE_ANGLE, 1000, true, INFINITE);
+	hMot1.setPower(-1000);
 }
 
 void place_domino_piece()
@@ -62,8 +64,8 @@ void place_domino_piece()
 	hMot3.resetEncoderCnt();
 	hMot4.resetEncoderCnt();
 	hMot1.setPower(0);
-	hMot3.rotAbs(450, 500, true, INFINITE);
-	hMot3.rotAbs(0, 500, true, INFINITE);
+	hMot3.rotAbs(350, 500, true, INFINITE);
+	hMot3.rotAbs(0, 1000, true, INFINITE);
 	hMot4.rotAbs(600, 400, true, INFINITE);
 	hMot4.rotAbs(0, 400, true, INFINITE);
 }
@@ -73,7 +75,7 @@ void automatic_build_1()
 	for (int piece = 0; piece < PIECES; piece++)
 	{
 		dist = sens.getDistance();
-		if (dist < 30)
+		if (dist < 60 && dist != -1)
 			break;
 		place_domino_piece();
 		hMot1.rotRel(-DISTANCE_BETWEEN, 500, true, INFINITE);
@@ -82,10 +84,7 @@ void automatic_build_1()
 
 void automatic_build_2()
 {
-	for (int piece = 0; piece < PIECES; piece++)
-	{
-		hMot1.rotRel(DISTANCE_BETWEEN + 30, 500, true, INFINITE);
-	}
+	hMot1.rotRel(DISTANCE_BETWEEN + 30, 500, true, INFINITE);
 }
 
 void automatic_build_3()
@@ -118,8 +117,11 @@ void automatic_build_6()
 
 void hMain()
 {
+	// time difference calculate
+	int start_ride_time, end_ride_time;
+
 	// encoder monitoring
-	sys.taskCreate(encoder);
+	// sys.taskCreate(encoder);
 
 	// creating a structures for time storage
 	// struct timespec time_now, btn_drive_pressed_time;
@@ -167,15 +169,19 @@ void hMain()
 			switch (received_data[0])
 			{
 			case 'a':
+				start_ride_time = sys.getUsTimVal();
 				go_left();
 				break;
 			case 'b':
+				start_ride_time = sys.getUsTimVal();
 				go_forward();
 				break;
 			case 'c':
+				start_ride_time = sys.getUsTimVal();
 				go_right();
 				break;
 			case 'd':
+				start_ride_time = sys.getUsTimVal();
 				go_backward();
 				break;
 			case 'x':
@@ -205,6 +211,9 @@ void hMain()
 		}
 		else
 		{
+			end_ride_time = sys.getUsTimVal();
+			if (end_ride_time - start_ride_time > TIME_DIFF)
+				hMot1.setPower(0);
 			continue;
 		}
 	}
