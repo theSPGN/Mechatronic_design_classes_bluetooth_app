@@ -73,7 +73,7 @@ void automatic_build_1()
 	for (int piece = 0; piece < PIECES; piece++)
 	{
 		dist = sens.getDistance();
-		if (dist < 15 && dist != -1)
+		if (dist < 15)
 			break;
 		place_domino_piece();
 		sys.delay(600);
